@@ -33,6 +33,7 @@ import Data.Proxy
 import Data.List
 import Text.Printf
 import Control.Applicative
+import Control.Exception.Base (mask)
 
 newtype QC = QC QC.Property
   deriving Typeable
@@ -103,7 +104,7 @@ instance IsTest QC where
     , Option (Proxy :: Proxy QuickCheckMaxRatio)
     ]
 
-  run opts (QC prop) yieldProgress = do
+  run opts (QC prop) yieldProgress = mask $ \restore -> do
     let
       QuickCheckTests      nTests     = lookupOption opts
       QuickCheckReplay     replay     = lookupOption opts
@@ -111,7 +112,8 @@ instance IsTest QC where
       QuickCheckMaxSize    maxSize    = lookupOption opts
       QuickCheckMaxRatio   maxRatio   = lookupOption opts
       args = QC.stdArgs { QC.chatty = False, QC.maxSuccess = nTests, QC.maxSize = maxSize, QC.replay = replay, QC.maxDiscardRatio = maxRatio}
-    r <- QC.quickCheckWithResult args prop
+
+    r <- restore $ QC.quickCheckWithResult args prop
 
     return $
       (if successful r then testPassed else testFailed)
