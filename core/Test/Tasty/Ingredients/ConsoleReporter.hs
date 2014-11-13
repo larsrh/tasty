@@ -12,13 +12,13 @@ import Control.Monad.State hiding (fail)
 import Control.Monad.Reader hiding (fail,reader)
 import Control.Concurrent.STM
 import Control.Exception
-import Control.DeepSeq
 import Control.Applicative
 import Test.Tasty.Core
 import Test.Tasty.Run
 import Test.Tasty.Ingredients
 import Test.Tasty.Options
 import Test.Tasty.Runners.Reducers
+import Test.Tasty.Runners.Utils
 import Text.Printf
 import qualified Data.IntMap as IntMap
 import Data.Char
@@ -287,7 +287,7 @@ consoleTestReporter =
   \opts tree -> Just $ \smap ->
 
   do
-  isTerm <- hIsTerminalDevice stdout
+  isTerm <- hSupportsANSI stdout
 
   (\k -> if isTerm
     then (do hideCursor; k) `finally` showCursor
@@ -461,22 +461,6 @@ computeAlignment opts =
       case m 0 of
         MinusInfinity -> 0
         Maximum x -> x
-
--- | Printing exceptions or other messages is tricky — in the process we
--- can get new exceptions!
---
--- See e.g. https://github.com/feuerbach/tasty/issues/25
-formatMessage :: String -> IO String
-formatMessage msg = go 3 msg
-  where
-    -- to avoid infinite recursion, we introduce the recursion limit
-    go :: Int -> String -> IO String
-    go 0        _ = return "exceptions keep throwing other exceptions!"
-    go recLimit msg = do
-      mbStr <- try $ evaluate $ force msg
-      case mbStr of
-        Right str -> return str
-        Left e' -> printf "message threw an exception: %s" <$> go (recLimit-1) (show (e' :: SomeException))
 
 -- (Potentially) colorful output
 ok, fail, infoOk, infoFail :: (?colors :: Bool) => String -> IO ()

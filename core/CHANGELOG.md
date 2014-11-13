@@ -1,6 +1,21 @@
 Changes
 =======
 
+Version 0.10.1
+--------------
+
+Export `Test.Tasty.Runners.formatMessage`
+
+Version 0.10.0.4
+----------------
+
+Don't output ANSI codes for the Emacs terminal emulator
+
+Version 0.10.0.3
+----------------
+
+Better handle the situation when there are no ingredients to run
+
 Version 0.10.0.2
 ----------------
 
