@@ -1,5 +1,5 @@
 -- vim:fdm=marker:foldtext=foldtext()
-{-# LANGUAGE BangPatterns, ImplicitParams, MultiParamTypeClasses, DeriveDataTypeable #-}
+{-# LANGUAGE BangPatterns, ImplicitParams, MultiParamTypeClasses, DeriveDataTypeable, FlexibleContexts #-}
 -- | Console reporter ingredient
 module Test.Tasty.Ingredients.ConsoleReporter
   ( consoleTestReporter
@@ -68,9 +68,10 @@ produceOutput opts tree =
       level <- ask
 
       let
-        printTestName =
+        printTestName = do
           printf "%s%s: %s" (indent level) name
             (replicate (alignment - indentSize * level - length name) ' ')
+          hFlush stdout
 
         printTestResult result = do
           rDesc <- formatMessage $ resultDescription result
@@ -82,9 +83,7 @@ produceOutput opts tree =
                 then ok
                 else fail
             time = resultTime result
-          if resultSuccessful result
-            then printFn "OK"
-            else printFn "FAIL"
+          printFn (resultShortDescription result)
           -- print time only if it's significant
           when (time >= 0.01) $
             printFn (printf " (%.2fs)" time)
@@ -293,7 +292,7 @@ consoleTestReporter =
     then (do hideCursor; k) `finally` showCursor
     else k) $ do
 
-      hSetBuffering stdout NoBuffering
+      hSetBuffering stdout LineBuffering
 
       let
         whenColor = lookupOption opts

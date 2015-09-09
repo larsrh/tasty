@@ -1,5 +1,5 @@
 -- | This module allows to use QuickCheck properties in tasty.
-{-# LANGUAGE GeneralizedNewtypeDeriving, DeriveDataTypeable #-}
+{-# LANGUAGE CPP, GeneralizedNewtypeDeriving, DeriveDataTypeable #-}
 module Test.Tasty.QuickCheck
   ( testProperty
   , QuickCheckTests(..)
@@ -18,6 +18,7 @@ module Test.Tasty.QuickCheck
 import Test.Tasty.Providers
 import Test.Tasty.Options
 import qualified Test.QuickCheck as QC
+import Test.Tasty.Runners (formatMessage)
 import Test.QuickCheck hiding -- for re-export
   ( quickCheck
   , Args(..)
@@ -32,13 +33,19 @@ import Test.QuickCheck hiding -- for re-export
   , verboseCheckResult
   , verbose
   )
-import Test.QuickCheck.Random (QCGen)
+
 import Data.Typeable
 import Data.Proxy
 import Data.List
 import Text.Printf
 import Control.Applicative
 import Control.Exception.Base (mask)
+
+#if MIN_VERSION_QuickCheck(2,7,0)
+import Test.QuickCheck.Random (QCGen)
+#else
+import System.Random (StdGen)
+#endif
 
 newtype QC = QC QC.Property
   deriving Typeable
@@ -52,7 +59,11 @@ newtype QuickCheckTests = QuickCheckTests Int
   deriving (Num, Ord, Eq, Real, Enum, Integral, Typeable)
 
 -- | Replay a previous test using a replay token
+#if MIN_VERSION_QuickCheck(2,7,0)
 newtype QuickCheckReplay = QuickCheckReplay (Maybe (QCGen, Int))
+#else
+newtype QuickCheckReplay = QuickCheckReplay (Maybe (StdGen, Int))
+#endif
   deriving (Typeable)
 
 -- | If a test case fails unexpectedly, show the replay token
@@ -120,9 +131,15 @@ instance IsTest QC where
 
     r <- restore $ QC.quickCheckWithResult args prop
 
+    qcOutput <- formatMessage $ QC.output r
+    let qcOutputNl =
+          if "\n" `isSuffixOf` qcOutput
+            then qcOutput
+            else qcOutput ++ "\n"
+
     return $
       (if successful r then testPassed else testFailed)
-      (QC.output r ++
+      (qcOutputNl ++
         (if showReplay then reproduceMsg r else ""))
 
 successful :: QC.Result -> Bool

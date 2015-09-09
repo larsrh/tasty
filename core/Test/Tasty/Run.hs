@@ -144,6 +144,7 @@ executeTest action statusVar timeoutOpt stimeoutOpt inits fins = mask $ \restore
             { resultOutcome = Failure $ TestTimedOut t
             , resultDescription =
                 "Timed out after " ++ tstr
+            , resultShortDescription = "TIMEOUT"
             , resultTime = fromIntegral t
             }
       fromMaybe timeoutResult <$> timeout t a

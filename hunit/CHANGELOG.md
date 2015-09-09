@@ -1,6 +1,16 @@
 Changes
 =======
 
+Version 0.9.2
+-------------
+
+Add `testCaseInfo` for tests that return some information upon success
+
+Version 0.9.1
+-------------
+
+Add `testCaseSteps` for multi-step tests
+
 Version 0.9.0.1
 ---------------
 
